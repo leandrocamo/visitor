@@ -7,9 +7,8 @@ use App\Models\PaisModel;
 
 class Pais extends BaseController
 {
-    protected $pais;
+    protected $pais, $session;
     protected $reglas;
-    //protected $session;
 
     public function __construct()
     {
@@ -20,9 +19,12 @@ class Pais extends BaseController
         $this->reglas = ['nombre' => [
             'rules' => 'required',
             'errors' => ['required' => 'El campo {field} es obligatorio.']
+        ], 'siglas' => [
+            'rules' => 'required',
+            'errors' => ['required' => 'El campo {field} es obligatorio.']
         ]];
     }
-
+    //1
     public function index($activo = 1)
     {
         //Si no existe una variable de sesión - Valida las sesiones
@@ -38,40 +40,36 @@ class Pais extends BaseController
         echo view('pais/pais', $data);
         echo view('footer');
     }
+    //2
     public function nuevo()
     {
-        $data = ['titulo' => 'Agregar País'];
+        $data = ['titulo' => 'Agregar pais'];
 
         echo view('header');
         echo view('pais/nuevo', $data);
         echo view('footer');
     }
-    public function eliminados($activo = 0)
-    {
-        $pais = $this->pais->where('activo', $activo)->findAll();
-        $data = ['titulo' => 'Paises Eliminados', 'datos' => $pais];
-
-        echo view('header');
-        echo view('pais/eliminados', $data);
-        echo view('footer');
-    }
-
-
+    //3
     public function insertar()
     {
         if ($this->request->getMethod() == "post" && $this->validate($this->reglas)) {
-            $this->pais->save(['nombre' => $this->request->getPost('nombre')]);
+            $this->pais->save([
+                'nombre' => $this->request->getPost('nombre'),
+                'siglas' => $this->request->getPost('siglas')
+            ]);
             return redirect()->to(base_url() . '/pais');
         } else {
-            $data = ['titulo' => 'Agregar País', 'validation' => $this->validator];
+            $data = ['titulo' => 'Agregar unidad (revisar)', 'validation' => $this->validator];
             echo view('header');
             echo view('pais/nuevo', $data);
             echo view('footer');
         }
     }
+    //4
     public function editar($id, $valid = null)
     {
         $pais = $this->pais->where('id', $id)->first();
+
         if ($valid != null) {
             $data = ['titulo' => 'Editar pais', 'datos' => $pais, 'validation' => $valid];
         } else {
@@ -82,11 +80,31 @@ class Pais extends BaseController
         echo view('pais/editar', $data);
         echo view('footer');
     }
-
+    //5
     public function actualizar()
     {
-        $this->pais->update($this->request->getPost('id'), ['nombre' => $this->request->getPost('nombre')]);
-        return redirect()->to(base_url() . '/pais');
+        if ($this->request->getMethod() == "post" && $this->validate($this->reglas)) {
+            $this->pais->update(
+                $this->request->getPost('id'),
+                [
+                    'nombre' => $this->request->getPost('nombre'),
+                    'siglas' => $this->request->getPost('siglas')
+                ]
+            );
+            return redirect()->to(base_url() . '/pais');
+        } else {
+            return $this->editar($this->request->getPost('id'), $this->validator);
+        }
+    }
+    //6
+    public function eliminados($activo = 0)
+    {
+        $pais = $this->pais->where('activo', $activo)->findAll();
+        $data = ['titulo' => 'Países Eliminados', 'datos' => $pais];
+
+        echo view('header');
+        echo view('pais/eliminados', $data);
+        echo view('footer');
     }
     public function eliminar($id)
     {
@@ -98,4 +116,15 @@ class Pais extends BaseController
         $this->pais->update($id, ['activo' => 1]);
         return redirect()->to(base_url() . '/pais');
     }
+
+    //=================================
+
+    
+    
+
+    
+    
+
+    
+ 
 }
