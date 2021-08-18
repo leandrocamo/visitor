@@ -1,12 +1,39 @@
 <?php
-
 /**
- * This file is part of the CodeIgniter 4 framework.
+ * CodeIgniter
  *
- * (c) CodeIgniter Foundation <admin@codeigniter.com>
+ * An open source application development framework for PHP
  *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
+ * This content is released under the MIT License (MIT)
+ *
+ * Copyright (c) 2014-2019 British Columbia Institute of Technology
+ * Copyright (c) 2019-2020 CodeIgniter Foundation
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ *
+ * @package    CodeIgniter
+ * @author     CodeIgniter Dev Team
+ * @copyright  2019-2020 CodeIgniter Foundation
+ * @license    https://opensource.org/licenses/MIT	MIT License
+ * @link       https://codeigniter.com
+ * @since      Version 4.0.0
+ * @filesource
  */
 
 namespace CodeIgniter\Database\SQLite3;
@@ -21,6 +48,8 @@ use CodeIgniter\Database\Exceptions\DataException;
  * These are needed in order to support migrations during testing
  * when another database is used as the primary engine, but
  * SQLite in memory databases are used for faster test execution.
+ *
+ * @package CodeIgniter\Database\SQLite3
  */
 class Table
 {
@@ -92,7 +121,7 @@ class Table
 	 *
 	 * @param string $table
 	 *
-	 * @return Table
+	 * @return \CodeIgniter\Database\SQLite3\Table
 	 */
 	public function fromTable(string $table)
 	{
@@ -100,10 +129,13 @@ class Table
 
 		// Remove the prefix, if any, since it's
 		// already been added by the time we get here...
-		$prefix = $this->db->DBPrefix; // @phpstan-ignore-line
-		if (! empty($prefix) && strpos($table, $prefix) === 0)
+		$prefix = $this->db->DBPrefix;
+		if (! empty($prefix))
 		{
-			$table = substr($table, strlen($prefix));
+			if (strpos($table, $prefix) === 0)
+			{
+				$table = substr($table, strlen($prefix));
+			}
 		}
 
 		if (! $this->db->tableExists($this->prefixedTableName))
@@ -126,7 +158,6 @@ class Table
 	 * Called after `fromTable` and any actions, like `dropColumn`, etc,
 	 * to finalize the action. It creates a temp table, creates the new
 	 * table with modifications, and copies the data over to the new table.
-	 * Resets the connection dataCache to be sure changes are collected.
 	 *
 	 * @return boolean
 	 */
@@ -150,8 +181,6 @@ class Table
 
 		$this->db->query('PRAGMA foreign_keys = ON');
 
-		$this->db->resetDataCache();
-
 		return $success;
 	}
 
@@ -160,7 +189,7 @@ class Table
 	 *
 	 * @param string|array $columns
 	 *
-	 * @return Table
+	 * @return \CodeIgniter\Database\SQLite3\Table
 	 */
 	public function dropColumn($columns)
 	{
@@ -189,7 +218,7 @@ class Table
 	 *
 	 * @param array $field
 	 *
-	 * @return Table
+	 * @return \CodeIgniter\Database\SQLite3\Table
 	 */
 	public function modifyColumn(array $field)
 	{
@@ -209,7 +238,7 @@ class Table
 	 *
 	 * @param string $column
 	 *
-	 * @return Table
+	 * @return \CodeIgniter\Database\SQLite3\Table
 	 */
 	public function dropForeignKey(string $column)
 	{
@@ -301,14 +330,22 @@ class Table
 
 		foreach ($this->fields as $name => $details)
 		{
-			$newFields[] = $details['new_name'] ?? $name;
-			$exFields[]  = $name;
+			// Are we modifying the column?
+			if (isset($details['new_name']))
+			{
+				$newFields[] = $details['new_name'];
+			}
+			else
+			{
+				$newFields[] = $name;
+			}
+
+			$exFields[] = $name;
 		}
 
 		$exFields  = implode(', ', $exFields);
 		$newFields = implode(', ', $newFields);
 
-		// @phpstan-ignore-next-line
 		$this->db->query("INSERT INTO {$this->prefixedTableName}({$newFields}) SELECT {$exFields} FROM {$this->db->DBPrefix}temp_{$this->tableName}");
 	}
 
@@ -332,9 +369,9 @@ class Table
 		foreach ($fields as $field)
 		{
 			$return[$field->name] = [
-				'type'    => $field->type,
-				'default' => $field->default,
-				'null'    => $field->nullable,
+				'type'     => $field->type,
+				'default'  => $field->default,
+				'nullable' => $field->nullable,
 			];
 
 			if ($field->primary_key)
@@ -385,7 +422,7 @@ class Table
 	 */
 	protected function dropIndexes()
 	{
-		if (! is_array($this->keys) || $this->keys === [])
+		if (! is_array($this->keys) || ! count($this->keys))
 		{
 			return;
 		}

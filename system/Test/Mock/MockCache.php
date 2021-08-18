@@ -1,35 +1,22 @@
-<?php
-
-/**
- * This file is part of the CodeIgniter 4 framework.
- *
- * (c) CodeIgniter Foundation <admin@codeigniter.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace CodeIgniter\Test\Mock;
+<?php namespace CodeIgniter\Test\Mock;
 
 use CodeIgniter\Cache\CacheInterface;
-use CodeIgniter\Cache\Handlers\BaseHandler;
-use Closure;
 
-class MockCache extends BaseHandler implements CacheInterface
+class MockCache implements CacheInterface
 {
+	/**
+	 * Prefixed to all cache names.
+	 *
+	 * @var string
+	 */
+	protected $prefix;
+
 	/**
 	 * Mock cache storage.
 	 *
 	 * @var array
 	 */
 	protected $cache = [];
-
-	/**
-	 * Expiration times.
-	 *
-	 * @var ?int[]
-	 */
-	protected $expirations = [];
 
 	//--------------------------------------------------------------------
 
@@ -38,6 +25,7 @@ class MockCache extends BaseHandler implements CacheInterface
 	 */
 	public function initialize()
 	{
+		// Not to see here...
 	}
 
 	//--------------------------------------------------------------------
@@ -51,36 +39,11 @@ class MockCache extends BaseHandler implements CacheInterface
 	 */
 	public function get(string $key)
 	{
-		$key = static::validateKey($key, $this->prefix);
+		$key = $this->prefix . $key;
 
 		return array_key_exists($key, $this->cache)
 			? $this->cache[$key]
 			: null;
-	}
-
-	//--------------------------------------------------------------------
-
-	/**
-	 * Get an item from the cache, or execute the given Closure and store the result.
-	 *
-	 * @param string  $key      Cache item name
-	 * @param integer $ttl      Time to live
-	 * @param Closure $callback Callback return value
-	 *
-	 * @return mixed
-	 */
-	public function remember(string $key, int $ttl, Closure $callback)
-	{
-		$value = $this->get($key);
-
-		if (! is_null($value))
-		{
-			return $value;
-		}
-
-		$this->save($key, $value = $callback(), $ttl);
-
-		return $value;
 	}
 
 	//--------------------------------------------------------------------
@@ -91,19 +54,18 @@ class MockCache extends BaseHandler implements CacheInterface
 	 * The $raw parameter is only utilized by Mamcache in order to
 	 * allow usage of increment() and decrement().
 	 *
-	 * @param string  $key   Cache item name
-	 * @param mixed   $value the data to save
-	 * @param integer $ttl   Time To Live, in seconds (default 60)
-	 * @param boolean $raw   Whether to store the raw value.
+	 * @param string                  $key Cache item name
+	 * @param $value  the data to save
+	 * @param null                    $ttl Time To Live, in seconds (default 60)
+	 * @param boolean                 $raw Whether to store the raw value.
 	 *
-	 * @return boolean
+	 * @return mixed
 	 */
 	public function save(string $key, $value, int $ttl = 60, bool $raw = false)
 	{
-		$key = static::validateKey($key, $this->prefix);
+		$key = $this->prefix . $key;
 
-		$this->cache[$key]       = $value;
-		$this->expirations[$key] = $ttl > 0 ? time() + $ttl : null;
+		$this->cache[$key] = $value;
 
 		return true;
 	}
@@ -115,46 +77,11 @@ class MockCache extends BaseHandler implements CacheInterface
 	 *
 	 * @param string $key Cache item name
 	 *
-	 * @return boolean
+	 * @return mixed
 	 */
 	public function delete(string $key)
 	{
-		$key = static::validateKey($key, $this->prefix);
-
-		if (! isset($this->cache[$key]))
-		{
-			return false;
-		}
-
 		unset($this->cache[$key]);
-		unset($this->expirations[$key]);
-
-		return true;
-	}
-
-	//--------------------------------------------------------------------
-
-	/**
-	 * Deletes items from the cache store matching a given pattern.
-	 *
-	 * @param string $pattern Cache items glob-style pattern
-	 *
-	 * @return integer
-	 */
-	public function deleteMatching(string $pattern)
-	{
-		$count = 0;
-		foreach (array_keys($this->cache) as $key)
-		{
-			if (fnmatch($pattern, $key))
-			{
-				$count++;
-				unset($this->cache[$key]);
-				unset($this->expirations[$key]);
-			}
-		}
-
-		return $count;
 	}
 
 	//--------------------------------------------------------------------
@@ -165,11 +92,12 @@ class MockCache extends BaseHandler implements CacheInterface
 	 * @param string  $key    Cache ID
 	 * @param integer $offset Step/value to increase by
 	 *
-	 * @return boolean
+	 * @return mixed
 	 */
 	public function increment(string $key, int $offset = 1)
 	{
-		$key  = static::validateKey($key, $this->prefix);
+		$key = $this->prefix . $key;
+
 		$data = $this->cache[$key] ?: null;
 
 		if (empty($data))
@@ -192,11 +120,11 @@ class MockCache extends BaseHandler implements CacheInterface
 	 * @param string  $key    Cache ID
 	 * @param integer $offset Step/value to increase by
 	 *
-	 * @return boolean
+	 * @return mixed
 	 */
 	public function decrement(string $key, int $offset = 1)
 	{
-		$key = static::validateKey($key, $this->prefix);
+		$key = $this->prefix . $key;
 
 		$data = $this->cache[$key] ?: null;
 
@@ -217,14 +145,11 @@ class MockCache extends BaseHandler implements CacheInterface
 	/**
 	 * Will delete all items in the entire cache.
 	 *
-	 * @return boolean
+	 * @return mixed
 	 */
 	public function clean()
 	{
-		$this->cache       = [];
-		$this->expirations = [];
-
-		return true;
+		$this->cache = [];
 	}
 
 	//--------------------------------------------------------------------
@@ -235,11 +160,11 @@ class MockCache extends BaseHandler implements CacheInterface
 	 * The information returned and the structure of the data
 	 * varies depending on the handler.
 	 *
-	 * @return string[] Keys currently present in the store
+	 * @return mixed
 	 */
 	public function getCacheInfo()
 	{
-		return array_keys($this->cache);
+		return [];
 	}
 
 	//--------------------------------------------------------------------
@@ -249,27 +174,11 @@ class MockCache extends BaseHandler implements CacheInterface
 	 *
 	 * @param string $key Cache item name.
 	 *
-	 * @return array|null
-	 *   Returns null if the item does not exist, otherwise array<string, mixed>
-	 *   with at least the 'expire' key for absolute epoch expiry (or null).
+	 * @return mixed
 	 */
 	public function getMetaData(string $key)
 	{
-		// Misses return null
-		if (! array_key_exists($key, $this->expirations))
-		{
-			return null;
-		}
-
-		// Count expired items as a miss
-		if (is_int($this->expirations[$key]) && $this->expirations[$key] > time())
-		{
-			return null;
-		}
-
-		return [
-			'expire' => $this->expirations[$key],
-		];
+		return false;
 	}
 
 	//--------------------------------------------------------------------

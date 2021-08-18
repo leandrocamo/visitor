@@ -1,27 +1,55 @@
 <?php
 
 /**
- * This file is part of the CodeIgniter 4 framework.
+ * CodeIgniter
  *
- * (c) CodeIgniter Foundation <admin@codeigniter.com>
+ * An open source application development framework for PHP
  *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
+ * This content is released under the MIT License (MIT)
+ *
+ * Copyright (c) 2014-2019 British Columbia Institute of Technology
+ * Copyright (c) 2019-2020 CodeIgniter Foundation
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ *
+ * @package    CodeIgniter
+ * @author     CodeIgniter Dev Team
+ * @copyright  2019-2020 CodeIgniter Foundation
+ * @license    https://opensource.org/licenses/MIT	MIT License
+ * @link       https://codeigniter.com
+ * @since      Version 4.0.0
+ * @filesource
  */
 
 namespace CodeIgniter\Session\Handlers;
 
+use CodeIgniter\Config\BaseConfig;
 use CodeIgniter\Database\BaseConnection;
 use CodeIgniter\Session\Exceptions\SessionException;
-use Config\App as AppConfig;
 use Config\Database;
-use Exception;
 
 /**
  * Session handler using current Database for storage
  */
-class DatabaseHandler extends BaseHandler
+class DatabaseHandler extends BaseHandler implements \SessionHandlerInterface
 {
+
 	/**
 	 * The database group to use for storage.
 	 *
@@ -62,10 +90,10 @@ class DatabaseHandler extends BaseHandler
 	/**
 	 * Constructor
 	 *
-	 * @param AppConfig $config
-	 * @param string    $ipAddress
+	 * @param BaseConfig $config
+	 * @param string     $ipAddress
 	 */
-	public function __construct(AppConfig $config, string $ipAddress)
+	public function __construct(BaseConfig $config, string $ipAddress)
 	{
 		parent::__construct($config, $ipAddress);
 
@@ -78,7 +106,6 @@ class DatabaseHandler extends BaseHandler
 		}
 
 		// Get DB Connection
-		// @phpstan-ignore-next-line
 		$this->DBGroup = $config->sessionDBGroup ?? config(Database::class)->defaultGroup;
 
 		$this->db = Database::connect($this->DBGroup);
@@ -106,7 +133,7 @@ class DatabaseHandler extends BaseHandler
 	 * @param string $name     Session cookie name
 	 *
 	 * @return boolean
-	 * @throws Exception
+	 * @throws \Exception
 	 */
 	public function open($savePath, $name): bool
 	{
@@ -138,13 +165,13 @@ class DatabaseHandler extends BaseHandler
 		}
 
 		// Needed by write() to detect session_regenerate_id() calls
-		if (is_null($this->sessionID)) // @phpstan-ignore-line
+		if (is_null($this->sessionID))
 		{
 			$this->sessionID = $sessionID;
 		}
 
 		$builder = $this->db->table($this->table)
-				->select($this->platform === 'postgre' ? "encode(data, 'base64') AS data" : 'data')
+				->select('data')
 				->where('id', $sessionID);
 
 		if ($this->matchIP)
@@ -165,13 +192,16 @@ class DatabaseHandler extends BaseHandler
 			return '';
 		}
 
+		// PostgreSQL's variant of a BLOB datatype is Bytea, which is a
+		// PITA to work with, so we use base64-encoded data in a TEXT
+		// field instead.
 		if (is_bool($result))
 		{
 			$result = '';
 		}
 		else
 		{
-			$result = ($this->platform === 'postgre') ? base64_decode(rtrim($result->data), true) : $result->data;
+			$result = ($this->platform === 'postgre') ? base64_decode(rtrim($result->data)) : $result->data;
 		}
 
 		$this->fingerprint = md5($result);
@@ -200,7 +230,7 @@ class DatabaseHandler extends BaseHandler
 		}
 
 		// Was the ID regenerated?
-		if ($sessionID !== $this->sessionID)
+		elseif ($sessionID !== $this->sessionID)
 		{
 			$this->rowExists = false;
 			$this->sessionID = $sessionID;
@@ -211,8 +241,8 @@ class DatabaseHandler extends BaseHandler
 			$insertData = [
 				'id'         => $sessionID,
 				'ip_address' => $this->ipAddress,
-				'timestamp'  => 'now()',
-				'data'       => $this->platform === 'postgre' ? '\x' . bin2hex($sessionData) : $sessionData,
+				'timestamp'  => time(),
+				'data'       => $this->platform === 'postgre' ? base64_encode($sessionData) : $sessionData,
 			];
 
 			if (! $this->db->table($this->table)->insert($insertData))
@@ -234,12 +264,12 @@ class DatabaseHandler extends BaseHandler
 		}
 
 		$updateData = [
-			'timestamp' => 'now()',
+			'timestamp' => time(),
 		];
 
 		if ($this->fingerprint !== md5($sessionData))
 		{
-			$updateData['data'] = ($this->platform === 'postgre') ? '\x' . bin2hex($sessionData) : $sessionData;
+			$updateData['data'] = ($this->platform === 'postgre') ? base64_encode($sessionData) : $sessionData;
 		}
 
 		if (! $builder->update($updateData))
@@ -317,8 +347,7 @@ class DatabaseHandler extends BaseHandler
 	 */
 	public function gc($maxlifetime): bool
 	{
-		$interval = implode(" '"[(int)($this->platform === 'postgre')], ['', "{$maxlifetime} second", '']);
-		return ($this->db->table($this->table)->delete("timestamp < now() - INTERVAL {$interval}")) ? true : $this->fail();
+		return ($this->db->table($this->table)->delete('timestamp < ' . (time() - $maxlifetime))) ? true : $this->fail();
 	}
 
 	//--------------------------------------------------------------------
@@ -342,8 +371,7 @@ class DatabaseHandler extends BaseHandler
 
 			return $this->fail();
 		}
-
-		if ($this->platform === 'postgre')
+		elseif ($this->platform === 'postgre')
 		{
 			$arg = "hashtext('{$sessionID}')" . ($this->matchIP ? ", hashtext('{$this->ipAddress}')" : '');
 			if ($this->db->simpleQuery("SELECT pg_advisory_lock({$arg})"))
@@ -383,8 +411,7 @@ class DatabaseHandler extends BaseHandler
 
 			return $this->fail();
 		}
-
-		if ($this->platform === 'postgre')
+		elseif ($this->platform === 'postgre')
 		{
 			if ($this->db->simpleQuery("SELECT pg_advisory_unlock({$this->lock})"))
 			{

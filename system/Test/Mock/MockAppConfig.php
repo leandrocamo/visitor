@@ -1,21 +1,8 @@
-<?php
+<?php namespace CodeIgniter\Test\Mock;
 
-/**
- * This file is part of the CodeIgniter 4 framework.
- *
- * (c) CodeIgniter Foundation <admin@codeigniter.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace CodeIgniter\Test\Mock;
-
-use Config\App;
-
-class MockAppConfig extends App
+class MockAppConfig
 {
-	public $baseURL = 'http://example.com/';
+	public $baseURL = 'http://example.com';
 
 	public $uriProtocol = 'REQUEST_URI';
 
@@ -24,7 +11,6 @@ class MockAppConfig extends App
 	public $cookiePath     = '/';
 	public $cookieSecure   = false;
 	public $cookieHTTPOnly = false;
-	public $cookieSameSite = 'Lax';
 
 	public $proxyIPs = '';
 
@@ -36,7 +22,6 @@ class MockAppConfig extends App
 	public $CSRFRegenerate  = true;
 	public $CSRFExcludeURIs = ['http://example.com'];
 	public $CSRFRedirect    = false;
-	public $CSRFSameSite    = 'Lax';
 
 	public $CSPEnabled = false;
 

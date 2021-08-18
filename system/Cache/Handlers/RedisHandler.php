@@ -1,26 +1,60 @@
 <?php
 
 /**
- * This file is part of the CodeIgniter 4 framework.
+ * CodeIgniter
  *
- * (c) CodeIgniter Foundation <admin@codeigniter.com>
+ * An open source application development framework for PHP
  *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
+ * This content is released under the MIT License (MIT)
+ *
+ * Copyright (c) 2014-2019 British Columbia Institute of Technology
+ * Copyright (c) 2019-2020 CodeIgniter Foundation
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ *
+ * @package    CodeIgniter
+ * @author     CodeIgniter Dev Team
+ * @copyright  2019-2020 CodeIgniter Foundation
+ * @license    https://opensource.org/licenses/MIT	MIT License
+ * @link       https://codeigniter.com
+ * @since      Version 4.0.0
+ * @filesource
  */
 
 namespace CodeIgniter\Cache\Handlers;
 
+use CodeIgniter\Cache\CacheInterface;
 use CodeIgniter\Exceptions\CriticalError;
-use Config\Cache;
-use Redis;
-use RedisException;
 
 /**
  * Redis cache handler
  */
-class RedisHandler extends BaseHandler
+class RedisHandler implements CacheInterface
 {
+
+	/**
+	 * Prefixed to all cache names.
+	 *
+	 * @var string
+	 */
+	protected $prefix;
+
 	/**
 	 * Default config
 	 *
@@ -37,7 +71,7 @@ class RedisHandler extends BaseHandler
 	/**
 	 * Redis connection
 	 *
-	 * @var Redis
+	 * @var \Redis
 	 */
 	protected $redis;
 
@@ -46,11 +80,11 @@ class RedisHandler extends BaseHandler
 	/**
 	 * Constructor.
 	 *
-	 * @param Cache $config
+	 * @param \Config\Cache $config
 	 */
-	public function __construct(Cache $config)
+	public function __construct($config)
 	{
-		$this->prefix = $config->prefix;
+		$this->prefix = $config->prefix ?: '';
 
 		if (! empty($config))
 		{
@@ -65,7 +99,7 @@ class RedisHandler extends BaseHandler
 	 */
 	public function __destruct()
 	{
-		if (isset($this->redis))
+		if ($this->redis)
 		{
 			$this->redis->close();
 		}
@@ -80,7 +114,7 @@ class RedisHandler extends BaseHandler
 	{
 		$config = $this->config;
 
-		$this->redis = new Redis();
+		$this->redis = new \Redis();
 
 		// Try to connect to Redis, if an issue occurs throw a CriticalError exception,
 		// so that the CacheFactory can attempt to initiate the next cache handler.
@@ -108,7 +142,7 @@ class RedisHandler extends BaseHandler
 				throw new CriticalError('Cache: Redis select database failed.');
 			}
 		}
-		catch (RedisException $e)
+		catch (\RedisException $e)
 		{
 			// $this->redis->connect() can sometimes throw a RedisException.
 			// We need to convert the exception into a CriticalError exception and throw it.
@@ -127,7 +161,8 @@ class RedisHandler extends BaseHandler
 	 */
 	public function get(string $key)
 	{
-		$key  = static::validateKey($key, $this->prefix);
+		$key = $this->prefix . $key;
+
 		$data = $this->redis->hMGet($key, ['__ci_type', '__ci_value']);
 
 		if (! isset($data['__ci_type'], $data['__ci_value']) || $data['__ci_value'] === false)
@@ -161,13 +196,13 @@ class RedisHandler extends BaseHandler
 	 * @param mixed   $value The data to save
 	 * @param integer $ttl   Time To Live, in seconds (default 60)
 	 *
-	 * @return boolean Success or failure
+	 * @return mixed
 	 */
 	public function save(string $key, $value, int $ttl = 60)
 	{
-		$key = static::validateKey($key, $this->prefix);
+		$key = $this->prefix . $key;
 
-		switch ($dataType = gettype($value))
+		switch ($data_type = gettype($value))
 		{
 			case 'array':
 			case 'object':
@@ -184,12 +219,11 @@ class RedisHandler extends BaseHandler
 				return false;
 		}
 
-		if (! $this->redis->hMSet($key, ['__ci_type' => $dataType, '__ci_value' => $value]))
+		if (! $this->redis->hMSet($key, ['__ci_type' => $data_type, '__ci_value' => $value]))
 		{
 			return false;
 		}
-
-		if ($ttl)
+		elseif ($ttl)
 		{
 			$this->redis->expireAt($key, time() + $ttl);
 		}
@@ -204,46 +238,13 @@ class RedisHandler extends BaseHandler
 	 *
 	 * @param string $key Cache item name
 	 *
-	 * @return boolean Success or failure
+	 * @return boolean
 	 */
 	public function delete(string $key)
 	{
-		$key = static::validateKey($key, $this->prefix);
+		$key = $this->prefix . $key;
 
-		return $this->redis->del($key) === 1;
-	}
-
-	//--------------------------------------------------------------------
-
-	/**
-	 * Deletes items from the cache store matching a given pattern.
-	 *
-	 * @param string $pattern Cache items glob-style pattern
-	 *
-	 * @return integer The number of deleted items
-	 */
-	public function deleteMatching(string $pattern)
-	{
-		$matchedKeys = [];
-		$iterator    = null;
-
-		do
-		{
-			// Scan for some keys
-			$keys = $this->redis->scan($iterator, $pattern);
-
-			// Redis may return empty results, so protect against that
-			if ($keys !== false)
-			{
-				foreach ($keys as $key)
-				{
-					$matchedKeys[] = $key;
-				}
-			}
-		}
-		while ($iterator > 0);
-
-		return $this->redis->del($matchedKeys);
+		return ($this->redis->del($key) === 1);
 	}
 
 	//--------------------------------------------------------------------
@@ -254,11 +255,11 @@ class RedisHandler extends BaseHandler
 	 * @param string  $key    Cache ID
 	 * @param integer $offset Step/value to increase by
 	 *
-	 * @return integer
+	 * @return mixed
 	 */
 	public function increment(string $key, int $offset = 1)
 	{
-		$key = static::validateKey($key, $this->prefix);
+		$key = $this->prefix . $key;
 
 		return $this->redis->hIncrBy($key, 'data', $offset);
 	}
@@ -271,11 +272,11 @@ class RedisHandler extends BaseHandler
 	 * @param string  $key    Cache ID
 	 * @param integer $offset Step/value to increase by
 	 *
-	 * @return integer
+	 * @return mixed
 	 */
 	public function decrement(string $key, int $offset = 1)
 	{
-		$key = static::validateKey($key, $this->prefix);
+		$key = $this->prefix . $key;
 
 		return $this->redis->hIncrBy($key, 'data', -$offset);
 	}
@@ -285,7 +286,7 @@ class RedisHandler extends BaseHandler
 	/**
 	 * Will delete all items in the entire cache.
 	 *
-	 * @return boolean Success or failure
+	 * @return boolean
 	 */
 	public function clean()
 	{
@@ -300,7 +301,7 @@ class RedisHandler extends BaseHandler
 	 * The information returned and the structure of the data
 	 * varies depending on the handler.
 	 *
-	 * @return array
+	 * @return mixed
 	 */
 	public function getCacheInfo()
 	{
@@ -314,22 +315,19 @@ class RedisHandler extends BaseHandler
 	 *
 	 * @param string $key Cache item name.
 	 *
-	 * @return array|null
-	 *   Returns null if the item does not exist, otherwise array<string, mixed>
-	 *   with at least the 'expire' key for absolute epoch expiry (or null).
+	 * @return mixed
 	 */
 	public function getMetaData(string $key)
 	{
-		$key   = static::validateKey($key, $this->prefix);
+		$key = $this->prefix . $key;
+
 		$value = $this->get($key);
 
 		if ($value !== null)
 		{
 			$time = time();
-			$ttl  = $this->redis->ttl($key);
-
 			return [
-				'expire' => $ttl > 0 ? time() + $ttl : null,
+				'expire' => $time + $this->redis->ttl($key),
 				'mtime'  => $time,
 				'data'   => $value,
 			];
@@ -349,4 +347,6 @@ class RedisHandler extends BaseHandler
 	{
 		return extension_loaded('redis');
 	}
+
+	//--------------------------------------------------------------------
 }

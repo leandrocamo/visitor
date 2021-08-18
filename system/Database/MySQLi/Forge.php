@@ -1,23 +1,50 @@
 <?php
 
 /**
- * This file is part of the CodeIgniter 4 framework.
+ * CodeIgniter
  *
- * (c) CodeIgniter Foundation <admin@codeigniter.com>
+ * An open source application development framework for PHP
  *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
+ * This content is released under the MIT License (MIT)
+ *
+ * Copyright (c) 2014-2019 British Columbia Institute of Technology
+ * Copyright (c) 2019-2020 CodeIgniter Foundation
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ *
+ * @package    CodeIgniter
+ * @author     CodeIgniter Dev Team
+ * @copyright  2019-2020 CodeIgniter Foundation
+ * @license    https://opensource.org/licenses/MIT	MIT License
+ * @link       https://codeigniter.com
+ * @since      Version 4.0.0
+ * @filesource
  */
 
 namespace CodeIgniter\Database\MySQLi;
 
-use CodeIgniter\Database\Forge as BaseForge;
-
 /**
  * Forge for MySQLi
  */
-class Forge extends BaseForge
+class Forge extends \CodeIgniter\Database\Forge
 {
+
 	/**
 	 * CREATE DATABASE statement
 	 *
@@ -88,10 +115,8 @@ class Forge extends BaseForge
 	 * NULL value representation in CREATE/ALTER TABLE statements
 	 *
 	 * @var string
-	 *
-	 * @internal
 	 */
-	protected $null = 'NULL';
+	protected $_null = 'NULL';
 
 	//--------------------------------------------------------------------
 
@@ -111,7 +136,7 @@ class Forge extends BaseForge
 			{
 				$sql .= ' ' . strtoupper($key) . ' = ';
 
-				if (in_array(strtoupper($key), $this->_quoted_table_options, true))
+				if (in_array(strtoupper($key), $this->_quoted_table_options))
 				{
 					$sql .= $this->db->escape($attributes[$key]);
 				}
@@ -140,16 +165,16 @@ class Forge extends BaseForge
 	/**
 	 * ALTER TABLE
 	 *
-	 * @param  string $alterType ALTER type
-	 * @param  string $table     Table name
-	 * @param  mixed  $field     Column definition
+	 * @param  string $alter_type ALTER type
+	 * @param  string $table      Table name
+	 * @param  mixed  $field      Column definition
 	 * @return string|string[]
 	 */
-	protected function _alterTable(string $alterType, string $table, $field)
+	protected function _alterTable(string $alter_type, string $table, $field)
 	{
-		if ($alterType === 'DROP')
+		if ($alter_type === 'DROP')
 		{
-			return parent::_alterTable($alterType, $table, $field);
+			return parent::_alterTable($alter_type, $table, $field);
 		}
 
 		$sql = 'ALTER TABLE ' . $this->db->escapeIdentifiers($table);
@@ -157,11 +182,11 @@ class Forge extends BaseForge
 		{
 			if ($data['_literal'] !== false)
 			{
-				$field[$i] = ($alterType === 'ADD') ? "\n\tADD " . $data['_literal'] : "\n\tMODIFY " . $data['_literal'];
+				$field[$i] = ($alter_type === 'ADD') ? "\n\tADD " . $data['_literal'] : "\n\tMODIFY " . $data['_literal'];
 			}
 			else
 			{
-				if ($alterType === 'ADD')
+				if ($alter_type === 'ADD')
 				{
 					$field[$i]['_literal'] = "\n\tADD ";
 				}
@@ -187,11 +212,11 @@ class Forge extends BaseForge
 	 */
 	protected function _processColumn(array $field): string
 	{
-		$extraClause = isset($field['after']) ? ' AFTER ' . $this->db->escapeIdentifiers($field['after']) : '';
+		$extra_clause = isset($field['after']) ? ' AFTER ' . $this->db->escapeIdentifiers($field['after']) : '';
 
-		if (empty($extraClause) && isset($field['first']) && $field['first'] === true)
+		if (empty($extra_clause) && isset($field['first']) && $field['first'] === true)
 		{
-			$extraClause = ' FIRST';
+			$extra_clause = ' FIRST';
 		}
 
 		return $this->db->escapeIdentifiers($field['name'])
@@ -203,7 +228,7 @@ class Forge extends BaseForge
 				. $field['auto_increment']
 				. $field['unique']
 				. (empty($field['comment']) ? '' : ' COMMENT ' . $field['comment'])
-				. $extraClause;
+				. $extra_clause;
 	}
 
 	//--------------------------------------------------------------------
@@ -237,12 +262,9 @@ class Forge extends BaseForge
 				continue;
 			}
 
-			if (! is_array($this->keys[$i]))
-			{
-				$this->keys[$i] = [$this->keys[$i]];
-			}
+			is_array($this->keys[$i]) || $this->keys[$i] = [$this->keys[$i]];
 
-			$unique = in_array($i, $this->uniqueKeys, true) ? 'UNIQUE ' : '';
+			$unique = in_array($i, $this->uniqueKeys) ? 'UNIQUE ' : '';
 
 			$sql .= ",\n\t{$unique}KEY " . $this->db->escapeIdentifiers(implode('_', $this->keys[$i]))
 				. ' (' . implode(', ', $this->db->escapeIdentifiers($this->keys[$i])) . ')';
@@ -252,4 +274,6 @@ class Forge extends BaseForge
 
 		return $sql;
 	}
+
+	//--------------------------------------------------------------------
 }
