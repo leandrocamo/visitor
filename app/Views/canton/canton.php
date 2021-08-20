@@ -3,31 +3,36 @@
         <div class="container-fluid">
             <h4 class="mt-4"><?php echo $titulo ?></h4>
 
-            <div>
-                <p>
-                    <a href="<?php echo base_url(); ?>/provincia/nuevo" class="btn btn-info">Agregar</a>
-                    <a href="<?php echo base_url(); ?>/provincia/eliminados" class="btn btn-warning">Eliminados</a>
-                </p>
+            <div class="form-group">
+                <div class="row">
+                    <div class="col-12 col-sm-6">
+                        <a href="<?php echo base_url(); ?>/canton/nuevo" class="btn btn-info">Agregar</a>
+                        <a href="<?php echo base_url(); ?>/canton/eliminados" class="btn btn-warning">Eliminados</a>
+                    </div>
+                </div>
             </div>
-
-            <div>
-                <p>
-                <h5 class="mt-4"><?php echo "Países" ?></h5>
-                <select class="form-control" id="paisCombo" name="paisCombo">
-                    <option value="0">Seleccionar Pais</option>
-                    <?php foreach ($paises as $pais) {
-                        if ($pais['id'] == 1)
-                            $seleccionador = ' selected';
-                        else
-                            $seleccionador = '';
-                        echo '<option value="' . $pais['id'] . '"' . $seleccionador . '>' . $pais['nombre'] . '</option>';
-                    } ?>
-                </select>
-
-                </p>
+            <div class="form-group">
+                <div class="row">
+                    <div class="col-12 col-sm-6">
+                        <label>País</label>
+                        <select class="form-control" id="id_pais" name="id_pais" autofocus>
+                            <option value="0">Seleccionar Pais</option>
+                            <?php foreach ($pais as $dato) {
+                                echo '<option value="' . $dato['id'] . '">' . $dato['nombre'] . '</option>';
+                            } ?>
+                        </select>
+                    </div>
+                    <div class="col-12 col-sm-6">
+                        <label>Provincia</label>
+                        <select class="form-control" id="id_provincia" name="id_provincia" autofocus>
+                            <option value="0">Seleccionar Provincia</option>
+                            <?php foreach ($provincia as $dato) {
+                                echo '<option value="' . $dato['id'] . '">' . $dato['nombre'] . '</option>';
+                            } ?>
+                        </select>
+                    </div>
+                </div>
             </div>
-
-
 
             <div class="table-responsive">
                 <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
@@ -36,8 +41,7 @@
                             <th>Codigo</th>
                             <th>Nombre</th>
                             <th>Siglas</th>
-                            <th>País</th>
-                            <th>Acción</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -46,14 +50,7 @@
                                 <td><?php echo $dato['id']; ?></td>
                                 <td><?php echo $dato['nombre']; ?></td>
                                 <td><?php echo $dato['siglas']; ?></td>
-                                <?php foreach ($paises as $pais) {
-                                    if ($dato['id_pais'] == $pais['id']) {
-                                ?>
-                                        <td><?php echo $pais['nombre']; ?></td>
-                                <?php
-                                    }
-                                }
-                                ?>
+
                                 <td>
                                     <a href="<?php echo base_url() . '/provincia/editar/' . $dato['id']; ?>" class="btn btn-warning">
                                         <i class="fas fa-pencil-alt"></i>
@@ -67,7 +64,6 @@
                     </tbody>
                 </table>
             </div>
-
         </div>
     </main>
 

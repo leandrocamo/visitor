@@ -13,22 +13,23 @@
                 <div class="form-group">
                     <div class="row">
                         <div class="col-12 col-sm-4">
-                            <label>Nombre</label>
-                            <input class="form-control" id="nombre" name="nombre" type="text" value="<?php echo set_value('nombre'); ?>" autofocus required />
-                        </div>
-                        <div class="col-12 col-sm-4">
-                            <label>Siglas</label>
-                            <input class="form-control" id="siglas" name="siglas" type="text" value="<?php echo set_value('siglas'); ?>" required />
-                        </div>
-                        <div class="col-12 col-sm-4">
                             <label>País</label>
-                            <select class="form-control" id="id_pais" name="id_pais">
+                            <select class="form-control" id="id_pais" name="id_pais" autofocus>
                                 <option value="">Seleccionar Pais</option>
                                 <?php foreach ($paises as $pais) {
                                     echo '<option value="' . $pais['id'] . '">' . $pais['nombre'] . '</option>';
                                 } ?>
                             </select>
                         </div>
+                        <div class="col-12 col-sm-4">
+                            <label>Nombre</label>
+                            <input class="form-control" id="nombre" name="nombre" type="text" value="<?php echo set_value('nombre'); ?>"  required />
+                        </div>
+                        <div class="col-12 col-sm-4">
+                            <label>Siglas</label>
+                            <input class="form-control" id="siglas" name="siglas" type="text" value="<?php echo set_value('siglas'); ?>" required />
+                        </div>
+
 
                     </div>
                 </div>

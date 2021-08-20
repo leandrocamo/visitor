@@ -18,7 +18,9 @@ $user_session = session();
     <script src="<?php echo base_url(); ?>/js/all.min.js"></script>
     <script src="<?php echo base_url(); ?>/js/jquery-3.5.1.min.js"></script>
     <script src="<?php echo base_url(); ?>/js/jquery-ui/jquery-ui.min.js"></script>
-
+    <!--
+    <script src="https://code.jquery.com/jquery-3.6.0.js" integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk=" crossorigin="anonymous"></script>
+-->
 </head>
 
 <body class="sb-nav-fixed">
@@ -68,7 +70,7 @@ $user_session = session();
                             <nav class="sb-sidenav-menu-nested nav">
                                 <a class="nav-link" href="<?php echo base_url(); ?>/pais">Países</a>
                                 <a class="nav-link" href="<?php echo base_url(); ?>/provincia">Provincia</a>
-                                <a class="nav-link" href="<?php echo base_url(); ?>/roles">Roles</a>
+                                <a class="nav-link" href="<?php echo base_url(); ?>/canton">Canton</a>
                                 <a class="nav-link" href="<?php echo base_url(); ?>/categorias">Cajas</a>
                             </nav>
                         </div>
@@ -152,7 +154,7 @@ $user_session = session();
 
 
 
-                       
+
 
 
 
