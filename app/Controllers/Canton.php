@@ -39,16 +39,35 @@ class Canton extends BaseController
 
         //Pendiente, consultar una sentencia SQL para que pueda organizar las columna
         $pais = $this->pais->where('activo', 1)->findAll();
-        $provincia = $this->provincia->where('activo', $activo)->findAll();
         $canton = $this->canton->where('activo', $activo)->findAll();
 
         //print_r($this->paises->getlastQuery());
 
-        $data = ['titulo' => 'Cantón', 'datos' => $canton, 'provincia' => $provincia, 'pais' => $pais];
+        $data = ['titulo' => 'Cantón', 'datos' => $canton, 'pais' => $pais];
 
         echo view('header');
         echo view('canton/canton', $data);
         echo view('footer');
+    }
+    public function buscarProvinciaPorCodigo($codigo){
+        $this->provincia->select('*');
+        $this->provincia->where('id_pais', $codigo);
+        $this->provincia->where('activo', 1);
+        $datos = $this->provincia->get()->getRow();
+
+
+        $res['existe'] = false;
+        $res['datos'] = '';
+        $res['error'] = '';
+
+        if ($datos) {
+            $res['datos'] = $datos;
+            $res['existe'] = true;
+        } else {
+            $res['error'] = 'No existe el producto';
+            $res['existe'] = false;
+        }
+        echo json_encode($res);
     }
     public function nuevo()
     {

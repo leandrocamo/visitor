@@ -12,7 +12,7 @@ class CantonModel extends Model
     protected $returnType     = 'array';
     protected $useSoftDeletes = false;
 
-    protected $allowedFields = ['nombre', 'siglas','id_provincia','activo'];
+    protected $allowedFields = ['nombre', 'siglas', 'id_provincia', 'activo'];
 
     protected $useTimestamps = true;
     protected $createdField  = 'fecha_ingreso';
